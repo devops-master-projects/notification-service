@@ -1,7 +1,7 @@
 # Compiled class file
 *.class
 
-# Log file
+# Log files
 *.log
 
 # BlueJ files
@@ -10,7 +10,7 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.nar
@@ -19,14 +19,30 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Virtual machine crash logs
 hs_err_pid*
 replay_pid*
 
-# Gradle build folder
-/build/
+# Gradle
 .gradle/
-Backend/Notification/gradle/*
+build/
+
+# IntelliJ / Eclipse / VS Code
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backend/Notification Gradle build
+Backend/Notification/build/
+Backend/Notification/.gradle/
+
+# Keep wrapper
 !Backend/Notification/gradle/wrapper/
 !Backend/Notification/gradle/wrapper/gradle-wrapper.jar
 !Backend/Notification/gradle/wrapper/gradle-wrapper.properties
