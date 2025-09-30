@@ -37,12 +37,13 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Backend/Notification Gradle build
+# Ignoriši build i lokalne gradle fajlove, ali ne wrapper
 Backend/Notification/build/
 Backend/Notification/.gradle/
 
-# Keep wrapper
+# Sačuvaj gradle wrapper
+!Backend/Notification/gradlew
+!Backend/Notification/gradlew.bat
 !Backend/Notification/gradle/wrapper/
 !Backend/Notification/gradle/wrapper/gradle-wrapper.jar
 !Backend/Notification/gradle/wrapper/gradle-wrapper.properties
