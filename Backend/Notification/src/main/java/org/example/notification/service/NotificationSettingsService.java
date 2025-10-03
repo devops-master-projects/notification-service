@@ -30,7 +30,7 @@ public class NotificationSettingsService {
             } else if (roles.contains("guest")) {
                 toInit = List.of(NotificationType.RESERVATION_RESPONDED);
             } else {
-                toInit = List.of(); // fallback: nema notifikacija
+                toInit = List.of();
             }
 
             toInit.forEach(type -> {
