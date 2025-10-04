@@ -28,7 +28,6 @@ public class NotificationSettings {
     @Enumerated(EnumType.STRING)
     private NotificationType notifType;
 
-
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
 

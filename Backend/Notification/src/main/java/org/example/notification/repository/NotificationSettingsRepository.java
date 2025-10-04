@@ -16,4 +16,7 @@ public interface NotificationSettingsRepository extends JpaRepository<Notificati
     Optional<NotificationSettings> findByUserIdAndNotifType(UUID userId, NotificationType notifType);
 
     boolean existsByUserIdAndNotifType(UUID userId, NotificationType notifType);
+
+    boolean existsByUserIdAndNotifTypeAndEnabledTrue(UUID userId, NotificationType notifType);
+
 }
