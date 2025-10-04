@@ -113,7 +113,7 @@ public class ReservationEventsListener {
         try {
             RequestRespondedEvent event =
                     objectMapper.readValue(record.value(), RequestRespondedEvent.class);
-            
+
             // save and send the notification only if the user wants to receive notifications of this type
             if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(event.getGuestId(), NotificationType.RESERVATION_RESPONDED)) {
 
