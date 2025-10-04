@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  notification-postgres:
+    image: postgres:16
+    container_name: notification-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: notification
+    ports:
+      - "5435:5432"
+    volumes:
+      - notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d notification"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  notification-data:
