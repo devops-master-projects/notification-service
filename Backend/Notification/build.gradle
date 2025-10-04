@@ -40,8 +40,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework:spring-messaging'
+    testImplementation 'com.h2database:h2'
+
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    jvmArgs += [
+            "--add-opens=java.base/java.math=ALL-UNNAMED"
+    ]
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
