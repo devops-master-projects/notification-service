@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.example.notification.dto.AccommodationInfo;
 import org.example.notification.dto.RequestRespondedEvent;
 import org.example.notification.dto.ReservationCreatedEvent;
 import org.example.notification.model.Notification;
@@ -43,21 +44,27 @@ public class ReservationEventsListener {
                     objectMapper.readValue(record.value(), ReservationCreatedEvent.class);
 
             // save and send the notification only if the user wants to receive notifications of this type
-            UUID hostId = getHostIdForAccommodation(event.getAccommodationId());
-            if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(hostId, NotificationType.RESERVATION_CREATED))
+            AccommodationInfo accInfo = getAccommodationInfo(event.getAccommodationId());
+            if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(accInfo.getHostId(), NotificationType.RESERVATION_CREATED))
             {
 
                 Notification notif = Notification.builder()
-                        .userId(hostId)
+                        .userId(accInfo.getHostId())
                         .notifType(NotificationType.RESERVATION_CREATED)
-                        .message("New reservation request created by " + event.getGuestName() + "  " + event.getGuestLastName())
+                        .message(
+                                "New reservation request for accommodation \"" + accInfo.getAccommodationName() + "\" " +
+                                        "from " + event.getStartDate() + " to " + event.getEndDate() + " " +
+                                        "created by guest " + event.getGuestName() + " " + event.getGuestLastName() +
+                                        " (" + event.getGuestEmail() + ")."
+                        )
                         .createdAt(event.getCreatedAt())
                         .read(false)
                         .build();
 
+
                 notificationRepository.save(notif);
                 messagingTemplate.convertAndSend(
-                        "/topic/notifications/" + hostId,
+                        "/topic/notifications/" + accInfo.getHostId(),
                         notif
                 );
             }
@@ -72,21 +79,26 @@ public class ReservationEventsListener {
             ReservationCreatedEvent event =
                     objectMapper.readValue(record.value(), ReservationCreatedEvent.class);
 
-            UUID hostId = getHostIdForAccommodation(event.getAccommodationId());
+            AccommodationInfo accInfo = getAccommodationInfo(event.getAccommodationId());
             // save and send the notification only if the user wants to receive notifications of this type
-            if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(hostId, NotificationType.RESERVATION_CANCELED)) {
+            if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(accInfo.getHostId(), NotificationType.RESERVATION_CANCELED)) {
 
                 Notification notif = Notification.builder()
-                        .userId(hostId)
+                        .userId(accInfo.getHostId())
                         .notifType(NotificationType.RESERVATION_CANCELED)
-                        .message("Reservation cancelled by guest " + event.getGuestName() + "  " + event.getGuestLastName())
+                        .message(
+                                "Reservation for accommodation \"" + accInfo.getAccommodationName() + "\" " +
+                                        "from " + event.getStartDate() + " to " + event.getEndDate() +
+                                        " has been cancelled by guest " + event.getGuestName() + " " + event.getGuestLastName() +
+                                        " (" + event.getGuestEmail() + ")."
+                        )
                         .createdAt(event.getCreatedAt())
                         .read(false)
                         .build();
 
                 notificationRepository.save(notif);
                 messagingTemplate.convertAndSend(
-                        "/topic/notifications/" + hostId,
+                        "/topic/notifications/" + accInfo.getHostId(),
                         notif
                 );
             }
@@ -101,26 +113,52 @@ public class ReservationEventsListener {
         try {
             RequestRespondedEvent event =
                     objectMapper.readValue(record.value(), RequestRespondedEvent.class);
-            
+
             // save and send the notification only if the user wants to receive notifications of this type
             if (settingsRepository.existsByUserIdAndNotifTypeAndEnabledTrue(event.getGuestId(), NotificationType.RESERVATION_RESPONDED)) {
 
                 String message;
+                AccommodationInfo accInfo = getAccommodationInfo(event.getAccommodationId());
+
                 if ((event.getHostName() == null || event.getHostName().isBlank()) &&
                         (event.getHostLastName() == null || event.getHostLastName().isBlank())) {
-                    message = "Your reservation request was automatically approved by the system.";
+
+                    message = String.format(
+                            "Your reservation request for accommodation \"%s\" was automatically approved by the system on %s.",
+                            accInfo.getAccommodationName(),
+                            event.getRespondedAt().toLocalDate()
+                    );
+
                 } else {
-                    if (event.getStatus() == RequestStatus.APPROVED) {
-                        message = String.format("Host %s %s has approved your reservation request.",
-                                event.getHostName(), event.getHostLastName());
-                    } else if (event.getStatus() == RequestStatus.REJECTED) {
-                        message = String.format("Host %s %s has rejected your reservation request.",
-                                event.getHostName(), event.getHostLastName());
-                    } else if (event.getStatus() == RequestStatus.CANCELLED) {
-                        message = String.format("Host %s %s has cancelled your reservation request.",
-                                event.getHostName(), event.getHostLastName());
-                    } else {
-                        message = "Your reservation request is pending host review.";
+                    switch (event.getStatus()) {
+                        case APPROVED -> message = String.format(
+                                "Good news! Host %s %s has approved your reservation request for accommodation \"%s\" on %s.",
+                                event.getHostName(),
+                                event.getHostLastName(),
+                                accInfo.getAccommodationName(),
+                                event.getRespondedAt().toLocalDate()
+                        );
+
+                        case REJECTED -> message = String.format(
+                                "Unfortunately, host %s %s has rejected your reservation request for accommodation \"%s\" on %s.",
+                                event.getHostName(),
+                                event.getHostLastName(),
+                                accInfo.getAccommodationName(),
+                                event.getRespondedAt().toLocalDate()
+                        );
+
+                        case CANCELLED -> message = String.format(
+                                "Your reservation request for accommodation \"%s\" was cancelled by host %s %s on %s.",
+                                accInfo.getAccommodationName(),
+                                event.getHostName(),
+                                event.getHostLastName(),
+                                event.getRespondedAt().toLocalDate()
+                        );
+
+                        default -> message = String.format(
+                                "Your reservation request for accommodation \"%s\" is still pending host review.",
+                                accInfo.getAccommodationName()
+                        );
                     }
                 }
 
@@ -145,14 +183,16 @@ public class ReservationEventsListener {
 
 
 
-    private UUID getHostIdForAccommodation(UUID accommodationId) {
+    private AccommodationInfo getAccommodationInfo(UUID accommodationId) {
         try {
             return restTemplate.getForObject(
                     accommodationServiceUrl + "/api/accommodations/" + accommodationId + "/host",
-                    UUID.class
+                    AccommodationInfo.class
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to resolve hostId", e);
+            throw new RuntimeException("Failed to fetch accommodation info", e);
         }
     }
+
+
 }
