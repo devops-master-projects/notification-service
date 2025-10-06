@@ -42,7 +42,7 @@ class NotificationControllerTest {
     private NotificationService notificationService;
 
     private NotificationDto dto(UUID id, String msg, boolean read) {
-        return new NotificationDto(id, /*notifType*/ null, msg, LocalDateTime.parse("2024-01-01T12:00:00"), read);
+        return new NotificationDto(id, null, msg, LocalDateTime.parse("2024-01-01T12:00:00"), read);
     }
 
 
@@ -161,7 +161,6 @@ class NotificationControllerTest {
                         .with(jwt().jwt(j -> j.claim("sub", userId.toString()))
                                 .authorities(new SimpleGrantedAuthority("ROLE_guest")))
                         .with(csrf())
-                        // Spring podržava ponavljanje parametra za listu
                         .param("ids", id1.toString())
                         .param("ids", id2.toString()))
                 .andExpect(status().isOk());
